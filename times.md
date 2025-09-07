@@ -1,11 +1,18 @@
-## 1. Manage Authentication
-
-**Backend**
+## 0. Structure
 
 - LLM_start: 1:22
 - LLM_end: 1:26
 - fix_start: 1:26
 - fix_end: 1:29
+
+## 1. Manage Authentication
+
+**Backend**
+
+- LLM_start: xx:xx
+- LLM_end: xx:xx
+- fix_start: xx:xx
+- fix_end: xx:xx
 
 **Frontend**
 
