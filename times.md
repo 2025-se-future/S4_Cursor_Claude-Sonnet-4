@@ -1,3 +1,10 @@
+## 0. Setup
+
+- LLM_start: 01:01
+- LLM_end: 01:06
+- fix_start: 01:06
+- fix_end: xx:xx
+
 ## 1. Manage Authentication
 
 **Backend**
