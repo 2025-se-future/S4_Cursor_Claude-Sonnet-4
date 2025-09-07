@@ -1,0 +1,402 @@
+openapi: 3.0.3
+info:
+  title: MovieSwipe Users API
+  description: Authentication and user management endpoints for MovieSwipe application
+  version: 1.0.0
+  contact:
+    name: MovieSwipe Development Team
+    email: dev@movieswipe.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://api.movieswipe.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication operations
+  - name: User Profile
+    description: User profile management operations
+  - name: Public
+    description: Public endpoints that don't require authentication
+
+paths:
+  /users/auth/google:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate with Google ID token
+      description: |
+        Authenticate user using Google ID token. If the user doesn't exist, 
+        a new account will be created automatically.
+      operationId: authenticateWithGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleAuthRequest"
+            example:
+              idToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2NzAyN..."
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AuthResponse"
+              example:
+                success: true
+                message: "Authentication successful"
+                data:
+                  user:
+                    id: "60f5d4c2b8a1c72d8c8b4567"
+                    email: "user@example.com"
+                    name: "John Doe"
+                    picture: "https://lh3.googleusercontent.com/a/default-user"
+                    isActive: true
+                    createdAt: "2023-01-01T00:00:00.000Z"
+                    updatedAt: "2023-01-01T00:00:00.000Z"
+                  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Authentication failed"
+                error: "Invalid Google ID token"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/auth/signout:
+    post:
+      tags:
+        - Authentication
+      summary: Sign out user
+      description: |
+        Sign out the current user. Note: JWT tokens are stateless, so the client 
+        must remove the token from storage.
+      operationId: signOut
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Sign out successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              example:
+                success: true
+                message: "Sign out successful. Please remove the token from client storage."
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/profile:
+    get:
+      tags:
+        - User Profile
+      summary: Get current user profile
+      description: Retrieve the profile information of the currently authenticated user
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserDto"
+              example:
+                success: true
+                message: "User profile retrieved successfully"
+                data:
+                  id: "60f5d4c2b8a1c72d8c8b4567"
+                  email: "user@example.com"
+                  name: "John Doe"
+                  picture: "https://lh3.googleusercontent.com/a/default-user"
+                  isActive: true
+                  createdAt: "2023-01-01T00:00:00.000Z"
+                  updatedAt: "2023-01-01T00:00:00.000Z"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      tags:
+        - User Profile
+      summary: Update current user profile
+      description: Update the profile information of the currently authenticated user
+      operationId: updateCurrentUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+            example:
+              name: "John Smith"
+              picture: "https://example.com/new-avatar.jpg"
+      responses:
+        "200":
+          description: User profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/UserDto"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags:
+        - User Profile
+      summary: Deactivate current user account
+      description: |
+        Deactivate (soft delete) the current user account. This action cannot be undone 
+        without administrator intervention.
+      operationId: deactivateCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User account deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+              example:
+                success: true
+                message: "User account deactivated successfully"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/exists:
+    get:
+      tags:
+        - Public
+      summary: Check if user exists by email
+      description: Check whether a user account exists for the given email address
+      operationId: checkUserExists
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+          description: Email address to check
+          example: "user@example.com"
+      responses:
+        "200":
+          description: User existence check completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          exists:
+                            type: boolean
+                            description: Whether a user exists with the given email
+              example:
+                success: true
+                message: "User existence check completed"
+                data:
+                  exists: true
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                success: false
+                message: "Validation failed"
+                error: "email: Invalid email format"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Google authentication
+
+  schemas:
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful
+        message:
+          type: string
+          description: Human-readable message describing the result
+        data:
+          type: object
+          description: Response data (when applicable)
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+        - error
+      properties:
+        success:
+          type: boolean
+          enum: [false]
+          description: Always false for error responses
+        message:
+          type: string
+          description: Human-readable error message
+        error:
+          type: string
+          description: Error code or detailed error information
+
+    GoogleAuthRequest:
+      type: object
+      required:
+        - idToken
+      properties:
+        idToken:
+          type: string
+          description: Google ID token received from Google Sign-In
+          minLength: 1
+      example:
+        idToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2NzAyN..."
+
+    AuthResponse:
+      type: object
+      required:
+        - user
+        - token
+      properties:
+        user:
+          $ref: "#/components/schemas/UserDto"
+        token:
+          type: string
+          description: JWT token for API authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserDto:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+          example: "60f5d4c2b8a1c72d8c8b4567"
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        name:
+          type: string
+          description: User's display name
+          maxLength: 100
+          example: "John Doe"
+        picture:
+          type: string
+          format: uri
+          description: URL to user's profile picture
+          nullable: true
+          example: "https://lh3.googleusercontent.com/a/default-user"
+        isActive:
+          type: boolean
+          description: Whether the user account is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2023-01-01T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2023-01-01T00:00:00.000Z"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: User's display name
+          minLength: 1
+          maxLength: 100
+          example: "John Smith"
+        picture:
+          type: string
+          format: uri
+          description: URL to user's profile picture
+          nullable: true
+          example: "https://example.com/new-avatar.jpg"
+      additionalProperties: false
