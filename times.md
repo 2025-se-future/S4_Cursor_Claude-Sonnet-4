@@ -5,7 +5,7 @@
 - LLM_start: 1:22
 - LLM_end: 1:26
 - fix_start: 1:26
-- fix_end: xx:xx
+- fix_end: 1:29
 
 **Frontend**
 
